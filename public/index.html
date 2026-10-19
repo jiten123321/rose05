@@ -81,6 +81,18 @@
   .final p{margin:0;font-style:italic;color:var(--ink-soft);text-wrap:balance;}
   .sign{font-family:"Parisienne",cursive;font-size:40px;color:var(--rose);line-height:1.1;}
 
+  /* ---- background music ---- */
+  #yt{position:fixed;left:-200px;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;}
+  .music{position:fixed;z-index:25;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));
+    width:46px;height:46px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;cursor:pointer;
+    background:var(--ivory);color:var(--rose);box-shadow:0 6px 18px rgba(120,20,40,.25),0 0 0 1px rgba(155,19,40,.12);}
+  .music[hidden]{display:none;}
+  .music svg{width:22px;height:22px;}
+  .music .off{display:none;}
+  .music.paused .on{display:none;}
+  .music.paused .off{display:block;}
+  .music:focus-visible{outline:2px solid var(--rose);outline-offset:3px;}
+
   @media (max-width:520px){
     body{font-size:18px;padding-block:calc(14px + env(safe-area-inset-top,0px)) calc(48px + env(safe-area-inset-bottom,0px));}
     main{gap:14px;}
@@ -113,6 +125,11 @@
   </div>
 </div>
 <canvas id="petals" aria-hidden="true"></canvas>
+<div id="yt" aria-hidden="true"><div id="ytPlayer"></div></div>
+<button class="music" id="musicBtn" type="button" aria-label="Pause music" hidden>
+  <svg class="on" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/></svg>
+  <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 13.55V3h6v4h-4v4" fill="none"/><circle cx="10" cy="17" r="3"/><path d="M3 3l18 18"/></svg>
+</button>
 <main>
   <header>
     <p class="intro">I know the last few days took a lot out of you, so no big speeches today. Just roses, and all my love.</p>
@@ -136,6 +153,21 @@
     welcome.classList.add('gone');document.body.classList.add('open');window.scrollTo(0,0);
     setTimeout(()=>{welcome.hidden=true;},1100);
   });
+
+  /* background music: a hidden YouTube player, started by the "Open your flowers" tap */
+  const VIDEO='EbnH3VHzhu8',btn=document.getElementById('musicBtn');let player=null,ready=false,want=false;
+  window.onYouTubeIframeAPIReady=function(){
+    player=new YT.Player('ytPlayer',{width:1,height:1,videoId:VIDEO,
+      playerVars:{autoplay:0,controls:0,disablekb:1,loop:1,playlist:VIDEO,playsinline:1,rel:0},
+      events:{onReady:()=>{ready=true;if(want)play();},
+              onStateChange:e=>{if(e.data===YT.PlayerState.PLAYING){btn.hidden=false;setBtn(true);}else if(e.data===YT.PlayerState.PAUSED){setBtn(false);}}}});
+  };
+  const tag=document.createElement('script');tag.src='https://www.youtube.com/iframe_api';document.head.appendChild(tag);
+  function setBtn(on){btn.classList.toggle('paused',!on);btn.setAttribute('aria-label',on?'Pause music':'Play music');}
+  function play(){try{player.unMute();player.setVolume(80);player.playVideo();}catch(e){}}
+  document.getElementById('openBtn').addEventListener('click',()=>{want=true;if(ready)play();});
+  btn.addEventListener('click',()=>{if(!ready)return;
+    if(player.getPlayerState()===YT.PlayerState.PLAYING){player.pauseVideo();setBtn(false);}else{play();setBtn(true);}});
 
   /* falling rose petals */
   const cv=document.getElementById('petals'),c=cv.getContext('2d');let W,H,ps=[];
